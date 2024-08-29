@@ -1,0 +1,76 @@
+import pandas as pd
+from textblob import TextBlob
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+
+# Example social media posts
+data = {
+    'post_id': [1, 2, 3, 4, 5],
+    'post_content': [
+        'I absolutely love the new features in the latest update! Amazing job!',
+        'The service was terrible. I am extremely disappointed and frustrated.',
+        'Had a wonderful time at the event last night. Great experience!',
+        'The product is okay, but I expected better quality.',
+        'Not satisfied with the recent purchase. It did not meet my expectations.'
+    ]
+}
+
+# Create a DataFrame
+df = pd.DataFrame(data)
+
+# Function to preprocess text
+def preprocess_text(text):
+    text = text.lower()  # Convert to lower case
+    text = re.sub(r'\d+', '', text)  # Remove numbers
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    return text
+
+# Function to analyze sentiment
+def analyze_sentiment(text):
+    blob = TextBlob(text)
+    return blob.sentiment.polarity, blob.sentiment.subjectivity
+
+# Preprocess text
+df['cleaned_content'] = df['post_content'].apply(preprocess_text)
+
+# Apply sentiment analysis
+df[['polarity', 'subjectivity']] = df['cleaned_content'].apply(lambda x: pd.Series(analyze_sentiment(x)))
+
+# Determine sentiment category based on polarity
+def get_sentiment_category(polarity):
+    if polarity > 0.1:
+        return 'Positive'
+    elif polarity < -0.1:
+        return 'Negative'
+    else:
+        return 'Neutral'
+
+df['sentiment_category'] = df['polarity'].apply(get_sentiment_category)
+
+# Print the DataFrame with sentiment analysis results
+print(df)
+
+# Plot sentiment distribution
+plt.figure(figsize=(10, 6))
+sns.countplot(data=df, x='sentiment_category', palette='viridis')
+plt.title('Sentiment Distribution')
+plt.xlabel('Sentiment Category')
+plt.ylabel('Count')
+plt.show()
+
+# Plot polarity and subjectivity
+plt.figure(figsize=(14, 6))
+
+plt.subplot(1, 2, 1)
+sns.histplot(df['polarity'], kde=True, color='blue')
+plt.title('Polarity Distribution')
+plt.xlabel('Polarity')
+
+plt.subplot(1, 2, 2)
+sns.histplot(df['subjectivity'], kde=True, color='green')
+plt.title('Subjectivity Distribution')
+plt.xlabel('Subjectivity')
+
+plt.tight_layout()
+plt.show()
